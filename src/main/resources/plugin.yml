@@ -1,0 +1,6 @@
+name: Sugoroku_craft
+version: ${project.version}
+main: yoneyone.yone.yo.sugoroku_craft.Sugoroku_craft
+commands:
+  test:
+    description: テスト用コマンド
