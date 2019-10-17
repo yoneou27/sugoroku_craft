@@ -6,3 +6,5 @@ commands:
     description: テスト用コマンド
   masu:
     description: マスを作るコマンド
+  sgo:
+    description: サイコロ用コマンド
