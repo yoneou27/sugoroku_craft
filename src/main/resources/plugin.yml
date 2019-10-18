@@ -8,3 +8,5 @@ commands:
     description: マスを作るコマンド
   sgo:
     description: サイコロ用コマンド
+  mgo:
+    description: 進む用コマンド
