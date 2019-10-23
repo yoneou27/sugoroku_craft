@@ -74,7 +74,7 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                 if (sender instanceof BlockCommandSender) {
                     try {
                         Player player = sender.getServer().getPlayer(args[0]);
-                        String d_path = "すごろくデータ\\" + args[0];
+                        String d_path = "すごろくデータ\\" + args[1];
                         File file = new File(d_path);
                         if (!file.exists()){
                             player.sendMessage("そのすごろく場は存在しません");
