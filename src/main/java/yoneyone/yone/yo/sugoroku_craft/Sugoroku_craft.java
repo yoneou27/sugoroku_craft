@@ -14,10 +14,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 public final class Sugoroku_craft extends JavaPlugin implements Listener {
     private final String ln = System.getProperty("line.separator");
@@ -73,6 +70,9 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
             case "start":
                 if (sender instanceof BlockCommandSender) {
                     try {
+                        if (sender.getServer().getPlayer(args[0]) == null){
+                            return true;
+                        }
                         Player player = sender.getServer().getPlayer(args[0]);
                         String d_path = "すごろくデータ\\" + args[1];
                         File file = new File(d_path);
@@ -85,7 +85,7 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                         sugoroku_place.put(player.getUniqueId(),place);
                         player.sendMessage("すごろく場"+ place +"でスタートしました");
                     } catch (ArrayIndexOutOfBoundsException e) {
-                        return true;
+                        return true;//コマンドの使い方、/start [プレイヤー] [すごろくの名前]
                     }
                 } else {
                     sender.sendMessage("このコマンドはコマンドブロックから実行してください");
@@ -105,6 +105,10 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                         String[] file_list = new File(d_path).list();
                         int i = -1;
                         if (file_list != null) {
+                            if (Arrays.asList(file_list).contains("goal")){
+                                player.sendMessage("このすごろく場は既に完成しています");
+                                return true;
+                            }
                             for (String str : file_list) {
                                 int l = Integer.parseInt(str);
                                 if (l > i) {
