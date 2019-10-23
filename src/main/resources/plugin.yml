@@ -2,11 +2,15 @@ name: Sugoroku_craft
 version: ${project.version}
 main: yoneyone.yone.yo.sugoroku_craft.Sugoroku_craft
 commands:
-  test:
-    description: テスト用コマンド
   masu:
     description: マスを作るコマンド
+  masugoal:
+    description: マスを作るコマンド（ゴール用）
   sgo:
     description: サイコロ用コマンド
   mgo:
     description: 進む用コマンド
+  start:
+    description: スタートコマンド（コマンドブロック用）
+  kgo:
+    description: 強制的に進むコマンド

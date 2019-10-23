@@ -1,11 +1,6 @@
 package yoneyone.yone.yo.sugoroku_craft;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Effect;
-import org.bukkit.Material;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.CommandBlock;
+import org.bukkit.*;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,8 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,11 +17,15 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public final class Sugoroku_craft extends JavaPlugin implements Listener {
     private final String ln = System.getProperty("line.separator");
 
-    private Map<Player,Integer> dice_result = new HashMap<>();//
+    private Map<UUID,Integer> dice_result = new HashMap<>();//サイコロ結果
+    private Map<UUID,Boolean> dice_is_finish = new HashMap<>();
+    private Map<UUID,Integer> sugoroku_masu = new HashMap<>();//現在のマス
+    private Map<UUID,String> sugoroku_place = new HashMap<>();//現在いるすごろく場
 
     @Override
     public void onEnable() {
@@ -43,14 +40,6 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
             e.setCancelled(true);
         }
     }
-    @EventHandler//ログアウト検知
-    public void PlayerQuitEvent(PlayerQuitEvent e){
-
-    }
-    @EventHandler//インベントリを閉じたかどうか検知
-    public  void InventoryCloseEvent(InventoryCloseEvent e){
-
-    }
 
     @Override
     public void onDisable() {
@@ -60,13 +49,44 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         switch (label) {
-            case "test":
+            case "kgo":
+                try {
+                    if (sender.getServer().getPlayer(args[0]) != null) {
+                        Player player = sender.getServer().getPlayer(args[0]);
+                        if (!sugoroku_place.containsKey(player.getUniqueId())){
+                            sender.sendMessage("すごろくを開始していません");
+                            return true;
+                        }
+                        player.sendMessage(args[1] +"進みました");
+                        if (go(player, Integer.parseInt(args[1]))) {
+                            player.sendMessage("ゴールしました");
+                            sugoroku_masu.remove(player.getUniqueId());
+                            sugoroku_place.remove(player.getUniqueId());
+                        }
+                    }else {
+                        sender.sendMessage("そのプレイヤーは存在しません");
+                    }
+                }catch (ArrayIndexOutOfBoundsException e){
+                    sender.sendMessage("コマンドの使い方を間違えています。\n/kgo [プレイヤー] [進ませたいマスの数（半角）（マイナスも可）]");
+                }
+                break;
+            case "start":
                 if (sender instanceof BlockCommandSender) {
-                    BlockCommandSender blockCommandSender = (BlockCommandSender) sender;
-                    BlockState blockState = blockCommandSender.getBlock().getState();
-                    CommandBlock commandBlock = (CommandBlock) blockState;
-                    commandBlock.setCommand("テストは成功しました");
-                    commandBlock.update();
+                    try {
+                        Player player = sender.getServer().getPlayer(args[0]);
+                        String d_path = "すごろくデータ\\" + args[0];
+                        File file = new File(d_path);
+                        if (!file.exists()){
+                            player.sendMessage("そのすごろく場は存在しません");
+                            return true;
+                        }
+                        String place = args[1];
+                        sugoroku_masu.put(player.getUniqueId(),0);
+                        sugoroku_place.put(player.getUniqueId(),place);
+                        player.sendMessage("すごろく場"+ place +"でスタートしました");
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        return true;
+                    }
                 } else {
                     sender.sendMessage("このコマンドはコマンドブロックから実行してください");
                 }
@@ -109,17 +129,52 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                             return true;
                         }
                     } catch (ArrayIndexOutOfBoundsException e) {
-                        player.sendMessage("コマンドの使い方を間違えています。" + ln + "正しい使い方/masu [すごろくの名前]");
+                        player.sendMessage("コマンドの使い方を間違えています。\n正しい使い方/masu [すごろくの名前]");
                         return true;
                     }
                 } else {
                     sender.sendMessage("このコマンドはプレイヤーから実行してください");
                 }
                 break;
+            case "masugoal":
+                if (sender instanceof Player){
+                    Player player = (Player) sender;
+                    try {
+                        String d_path = "すごろくデータ\\" + args[0];
+                        File file = new File(d_path);
+                        if (!file.exists()){
+                            player.sendMessage("そのすごろく場は存在しません");
+                            return true;
+                        }
+                        String file_path = "すごろくデータ\\" + args[0] + "\\goal";
+                        try (FileWriter fw = new FileWriter(file_path)) {
+                            String x = String.valueOf(player.getLocation().getX());
+                            String y = String.valueOf(player.getLocation().getY());
+                            String z = String.valueOf(player.getLocation().getZ());
+                            fw.write(x);
+                            fw.write(ln);
+                            fw.write(y);
+                            fw.write(ln);
+                            fw.write(z);
+                            player.sendMessage("ゴールを保存しました");
+                        } catch (IOException e) {
+                            player.sendMessage("エラーが発生しました");
+                        }
+                    }catch (ArrayIndexOutOfBoundsException e){
+                        player.sendMessage("コマンドの使い方が間違えています。\n正しい使い方/masugoal [すごろくの名前]");
+                    }
+                }else {
+                    sender.sendMessage("このコマンドはプレイヤーから実行してください");
+                }
+                break;
             case "sgo":
                 if (sender instanceof Player){
                     Player player = (Player) sender;
-                    if (dice_result.containsKey(player)){
+                    if (!sugoroku_place.containsKey(player.getUniqueId())){
+                        player.sendMessage("すごろくを開始していません");
+                        return true;
+                    }
+                    if (dice_is_finish.get(player.getUniqueId()) != null){
                         player.sendMessage("既にサイコロを振っています");
                     }else {
                         dice_GUI(player, 100);
@@ -131,10 +186,20 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
             case "mgo":
                 if (sender instanceof Player){
                     Player player = (Player) sender;
-                    if (dice_result.containsKey(player)){
-                        int dice = dice_result.get(player);
+                    if (!sugoroku_place.containsKey(player.getUniqueId())){
+                        player.sendMessage("すごろくを開始していません");
+                        return true;
+                    }
+                    if (dice_is_finish.get(player.getUniqueId()) != null) {
+                        int dice = dice_result.get(player.getUniqueId());
                         player.sendMessage(dice + "進みます");
-                        //ここに進む処理
+                        if (go(player, dice)){
+                            player.sendMessage("ゴールしました");
+                            sugoroku_masu.remove(player.getUniqueId());
+                            sugoroku_place.remove(player.getUniqueId());
+                        }
+                        dice_result.remove(player.getUniqueId());
+                        dice_is_finish.remove(player.getUniqueId());
                     }else {
                         player.sendMessage("結果ががありません\nサイコロを振っていない可能性があります");
                     }
@@ -180,7 +245,38 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
         if (time > 0){
             dice_GUI(player,time);
         }else {
-            dice_result.put(player,result_int);
+            dice_result.put(player.getUniqueId(),result_int);
+            dice_is_finish.put(player.getUniqueId(),true);
         }
+    }
+    private boolean go(Player player,int masu){
+        boolean tof = false;
+        int now_masu = sugoroku_masu.get(player.getUniqueId());
+        int next_masu = now_masu + masu;
+        if (next_masu < 0){
+            next_masu = 0;
+        }
+        String file_path = "すごろくデータ\\" + sugoroku_place.get(player.getUniqueId()) + "\\" + next_masu;
+        File file = new File(file_path);
+        if (!file.exists()){
+            file_path = "すごろくデータ\\" + sugoroku_place.get(player.getUniqueId()) + "\\goal";
+            tof = true;
+        }
+        try (FileReader fr = new FileReader(file_path)){
+            BufferedReader br = new BufferedReader(fr);
+            String x = br.readLine();
+            String y = br.readLine();
+            String z = br.readLine();
+            double mx = Double.parseDouble(x);
+            double my = Double.parseDouble(y);
+            double mz = Double.parseDouble(z);
+            float yaw = player.getLocation().getYaw();
+            float pitch = player.getLocation().getPitch();
+            player.teleport(new Location(player.getWorld(),mx,my,mz,yaw,pitch));
+            sugoroku_masu.put(player.getUniqueId(),next_masu);
+        }catch (IOException e){
+            player.sendMessage("エラーが発生しました");
+        }
+        return tof;
     }
 }
