@@ -23,6 +23,7 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
     private Map<UUID,Boolean> dice_is_finish = new HashMap<>();
     private Map<UUID,Integer> sugoroku_masu = new HashMap<>();//現在のマス
     private Map<UUID,String> sugoroku_place = new HashMap<>();//現在いるすごろく場
+    private Map<UUID,Integer> dice_Times = new HashMap<>();//サイコロの降っていい数
 
     @Override
     public void onEnable() {
@@ -46,6 +47,28 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         switch (label) {
+            case "dicetime":
+                try {
+                    if (sender.getServer().getPlayer(args[0]) != null) {
+                        Player player = sender.getServer().getPlayer(args[0]);
+                        int num = Integer.parseInt(args[1]);
+                        if (!sugoroku_place.containsKey(player.getUniqueId())) {
+                            sender.sendMessage("すごろくを開始していません");
+                            return true;
+                        }
+                        if (dice_time(player,num)){
+                            sender.sendMessage("そのプレイヤーはサイコロの振れる回数無制限です");
+                            return true;
+                        }
+                        player.sendMessage("サイコロを触れる回数が変化しました、残り："+ dice_Times.get(player.getUniqueId()));
+                        sender.sendMessage("コマンドは成功しました");
+                    }else {
+                        sender.sendMessage("そのプレイヤーは存在しません");
+                    }
+                }catch (ArrayIndexOutOfBoundsException e){
+                    sender.sendMessage("コマンドの使い方を間違えています。\n/dicetime [プレイヤー] [増やしたいサイコロの振れる回数（半角）（マイナスも可）]");
+                }
+                break;
             case "kgo":
                 try {
                     if (sender.getServer().getPlayer(args[0]) != null) {
@@ -59,7 +82,9 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                             player.sendMessage("ゴールしました");
                             sugoroku_masu.remove(player.getUniqueId());
                             sugoroku_place.remove(player.getUniqueId());
+                            dice_Times.remove(player.getUniqueId());
                         }
+                        sender.sendMessage("コマンドは成功しました");
                     }else {
                         sender.sendMessage("そのプレイヤーは存在しません");
                     }
@@ -81,11 +106,18 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                             return true;
                         }
                         String place = args[1];
+                        int num = Integer.parseInt(args[2]);
+                        String message = "サイコロの触れる回数は"+ num +"回です";
+                        if (num <= 0){
+                            num = -1;
+                            message = "サイコロの触れる回数は無制限です";
+                        }
+                        dice_Times.put(player.getUniqueId(),num);
                         sugoroku_masu.put(player.getUniqueId(),0);
                         sugoroku_place.put(player.getUniqueId(),place);
-                        player.sendMessage("すごろく場"+ place +"でスタートしました");
+                        player.sendMessage("すごろく場"+ place +"でスタートしました\n"+ message);
                     } catch (ArrayIndexOutOfBoundsException e) {
-                        return true;//コマンドの使い方、/start [プレイヤー] [すごろくの名前]
+                        return true;//コマンドの使い方、/start [プレイヤー] [すごろくの名前] [制限サイコロの回数（0以下なら無制限）]
                     }
                 } else {
                     sender.sendMessage("このコマンドはコマンドブロックから実行してください");
@@ -178,10 +210,25 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                         player.sendMessage("すごろくを開始していません");
                         return true;
                     }
+                    int dices = dice_Times.get(player.getUniqueId());
+                    if (dices == 0){
+                        player.sendMessage("サイコロを触れる回数が0になりました\nゲームオーバー…");
+                        go(player,-10000);
+                        sugoroku_masu.remove(player.getUniqueId());
+                        sugoroku_place.remove(player.getUniqueId());
+                        dice_Times.remove(player.getUniqueId());
+                        return true;
+                    }
                     if (dice_is_finish.get(player.getUniqueId()) != null){
                         player.sendMessage("既にサイコロを振っています");
                     }else {
-                        dice_GUI(player, 100);
+                        if (dices == -1){
+                            dice_GUI(player, 100);
+                        }else {
+                            player.sendMessage("サイコロを振れる回数：残り" + dices + "回");
+                            dice_GUI(player, 100);
+                            dice_Times.put(player.getUniqueId(), dices - 1);
+                        }
                     }
                 } else {
                     sender.sendMessage("このコマンドはプレイヤーから実行してください");
@@ -201,6 +248,7 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                             player.sendMessage("ゴールしました");
                             sugoroku_masu.remove(player.getUniqueId());
                             sugoroku_place.remove(player.getUniqueId());
+                            dice_Times.remove(player.getUniqueId());
                         }
                         dice_result.remove(player.getUniqueId());
                         dice_is_finish.remove(player.getUniqueId());
@@ -282,5 +330,17 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
             player.sendMessage("エラーが発生しました");
         }
         return tof;
+    }
+    private boolean dice_time(Player player,int num){
+        int now_dice = dice_Times.get(player.getUniqueId());
+        if (now_dice == -1){
+            return true;
+        }
+        int next_dice = now_dice + num;
+        if (next_dice < 0){
+            next_dice = 0;
+        }
+        dice_Times.put(player.getUniqueId(),next_dice);
+        return false;
     }
 }

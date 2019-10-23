@@ -3,14 +3,16 @@ version: ${project.version}
 main: yoneyone.yone.yo.sugoroku_craft.Sugoroku_craft
 commands:
   masu:
-    description: マスを作るコマンド
+    description: マスを作るコマンド（プレイヤー用）
   masugoal:
-    description: マスを作るコマンド（ゴール用）
+    description: マスを作るコマンド（ゴール用）（プレイヤー用）
   sgo:
-    description: サイコロ用コマンド
+    description: サイコロ用コマンド（プレイヤー用）
   mgo:
-    description: 進む用コマンド
+    description: 進む用コマンド（プレイヤー用）
   start:
     description: スタートコマンド（コマンドブロック用）
   kgo:
-    description: 強制的に進むコマンド
+    description: 強制的に進むコマンド(管理者用)
+  dicetime:
+    description: サイコロの触れる回数を変更するコマンド（管理者用）
