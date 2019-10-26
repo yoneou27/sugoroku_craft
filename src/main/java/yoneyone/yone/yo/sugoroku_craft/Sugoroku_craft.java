@@ -47,6 +47,26 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         switch (label) {
+            case "exeyone":
+                try {
+                    if (sender.getServer().getPlayer(args[0]) != null) {
+                        Player player = sender.getServer().getPlayer(args[0]);
+                        StringBuilder str = new StringBuilder(" ");
+                        for (String s:args){
+                            if (!player.getDisplayName().equals(s)){
+                                str.append(s);
+                                str.append(" ");
+                            }
+                        }
+                        String str2 = str.toString().trim();
+                        Bukkit.getServer().dispatchCommand(player, str2);
+                    }else {
+                        sender.sendMessage("そのプレイヤーは存在しません");
+                    }
+                }catch (ArrayIndexOutOfBoundsException e){
+                    sender.sendMessage("コマンドの使い方を間違えています");
+                }
+                break;
             case "dicetime":
                 try {
                     if (sender.getServer().getPlayer(args[0]) != null) {
@@ -74,7 +94,7 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                     if (sender.getServer().getPlayer(args[0]) != null) {
                         Player player = sender.getServer().getPlayer(args[0]);
                         if (!sugoroku_place.containsKey(player.getUniqueId())){
-                            sender.sendMessage("すごろくを開始していません");
+                            sender.sendMessage("そのプレイヤーはすごろくを開始していません");
                             return true;
                         }
                         player.sendMessage(args[1] +"進みました");
@@ -211,16 +231,16 @@ public final class Sugoroku_craft extends JavaPlugin implements Listener {
                         return true;
                     }
                     int dices = dice_Times.get(player.getUniqueId());
-                    if (dices == 0){
+
+                    if (dice_is_finish.get(player.getUniqueId()) != null){
+                        player.sendMessage("既にサイコロを振っています");
+                    }else if (dices == 0){
                         player.sendMessage("サイコロを触れる回数が0になりました\nゲームオーバー…");
                         go(player,-10000);
                         sugoroku_masu.remove(player.getUniqueId());
                         sugoroku_place.remove(player.getUniqueId());
                         dice_Times.remove(player.getUniqueId());
                         return true;
-                    }
-                    if (dice_is_finish.get(player.getUniqueId()) != null){
-                        player.sendMessage("既にサイコロを振っています");
                     }else {
                         if (dices == -1){
                             dice_GUI(player, 100);

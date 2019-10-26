@@ -16,3 +16,5 @@ commands:
     description: 強制的に進むコマンド(管理者用)
   dicetime:
     description: サイコロの触れる回数を変更するコマンド（管理者用）
+  exeyone:
+    description: executeコマンドのこのプラグイン用に改良したもの
